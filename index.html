@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GnuCash Web — Tableau de bord comptable</title>
+    <meta name="description" content="Visualisation Web interactive des données comptables GnuCash — Dashboard, Plan comptable et Grand livre." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="app">
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-brand">
+          <span class="brand-icon">📊</span>
+          <h1 class="brand-title">GnuCash<span class="brand-accent">Web</span></h1>
+        </div>
+        <nav class="sidebar-nav">
+          <a href="#dashboard" class="nav-link active" data-view="dashboard" id="nav-dashboard">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-label">Dashboard</span>
+          </a>
+          <a href="#accounts" class="nav-link" data-view="accounts" id="nav-accounts">
+            <span class="nav-icon">🏛️</span>
+            <span class="nav-label">Plan comptable</span>
+          </a>
+          <a href="#ledger" class="nav-link" data-view="ledger" id="nav-ledger">
+            <span class="nav-icon">📒</span>
+            <span class="nav-label">Grand livre</span>
+          </a>
+        </nav>
+        <div class="sidebar-footer">
+          <div class="db-info" id="db-info">
+            <span class="db-icon">💾</span>
+            <span class="db-label">Chargement…</span>
+          </div>
+        </div>
+      </aside>
+      <main id="main-content" class="main-content">
+        <div id="loading-screen" class="loading-screen">
+          <div class="loader-container">
+            <div class="loader-spinner"></div>
+            <p class="loader-text">Chargement de la base de données…</p>
+          </div>
+        </div>
+        <div id="view-container" class="view-container" style="display: none;"></div>
+      </main>
+    </div>
+    <!-- Drop overlay for drag-and-drop -->
+    <div id="drop-overlay" class="drop-overlay">
+      <div class="drop-overlay-content">
+        <div class="drop-overlay-icon">📂</div>
+        <p class="drop-overlay-text">Déposez votre fichier <strong>.gnucash</strong> ici</p>
+      </div>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
