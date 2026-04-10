@@ -804,3 +804,112 @@ body {
   0%, 100% { border-color: var(--accent-primary); }
   50% { border-color: var(--accent-cyan); }
 }
+
+/* ---------- Report 2025 Styles ---------- */
+.report-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+}
+
+.report-table th, .report-table td {
+  padding: var(--space-md);
+  text-align: left;
+  border-bottom: 1px solid var(--border-accent);
+}
+
+.report-table th {
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.8em;
+  letter-spacing: 0.5px;
+}
+
+.report-table .subtotal td {
+  font-weight: 600;
+  border-top: 1px dashed var(--border-accent);
+  background: rgba(108, 140, 255, 0.05);
+}
+
+.report-table .total td {
+  font-weight: 700;
+  font-size: 1.1em;
+  border-top: 2px solid var(--border-accent);
+  background: rgba(108, 140, 255, 0.1);
+}
+
+.report-table td.positive {
+  color: var(--color-positive);
+}
+
+.report-table td.negative {
+  color: var(--color-negative);
+}
+
+/* Toggle Switch */
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.toggle-switch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  background-color: var(--bg-card);
+  border-radius: 24px;
+  border: 1px solid var(--border-accent);
+  transition: .4s;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 2px;
+  background-color: var(--text-muted);
+  border-radius: 50%;
+  transition: .4s;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: rgba(108, 140, 255, 0.2);
+  border-color: var(--accent-primary);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(19px);
+  background-color: var(--accent-primary);
+  box-shadow: 0 0 10px rgba(108, 140, 255, 0.5);
+}
+
+.toggle-label {
+  font-size: 0.9em;
+  color: var(--text-secondary);
+  font-weight: 500;
+}

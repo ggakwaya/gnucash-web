@@ -218,6 +218,48 @@ export function getRevenueByActivity() {
   `);
 }
 
+/* ================== 2025 REPORTING ================== */
+
+/**
+ * Get all filtered splits for the 2025 exercise.
+ */
+export function getSplits2025() {
+  return query(`
+    SELECT
+      a.name as account_name,
+      a.account_type,
+      a.code,
+      a.guid as account_guid,
+      a.parent_guid,
+      CAST(s.value_num AS REAL) / s.value_denom as amount,
+      t.post_date,
+      t.description
+    FROM splits s
+    JOIN transactions t ON s.tx_guid = t.guid
+    JOIN accounts a ON s.account_guid = a.guid
+    WHERE t.post_date >= '2025-01-01' AND t.post_date <= '2025-12-31 23:59:59'
+  `);
+}
+
+/**
+ * Get current balance for all accounts at end of 2025
+ */
+export function getBalancesEnd2025() {
+  return query(`
+    SELECT
+      a.name as account_name,
+      a.account_type,
+      a.code,
+      a.guid as account_guid,
+      SUM(CAST(s.value_num AS REAL) / s.value_denom) as balance
+    FROM splits s
+    JOIN transactions t ON s.tx_guid = t.guid
+    JOIN accounts a ON s.account_guid = a.guid
+    WHERE t.post_date <= '2025-12-31 23:59:59'
+    GROUP BY a.guid
+  `);
+}
+
 /* ================== GENERAL LEDGER ================== */
 
 /**
