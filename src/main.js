@@ -66,9 +66,46 @@ function showDropZone(message) {
     <div class="loader-container">
       <div class="drop-zone-icon">📂</div>
       <p class="loader-text">${message || 'Glissez-déposez un fichier .gnucash'}</p>
+      <button id="drop-zone-upload" class="sidebar-btn" style="width: auto; margin-top: 1rem;">
+        Choisir un fichier…
+      </button>
+      <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem;">
+        Format SQLite uniquement
+      </p>
     </div>
   `;
   document.getElementById('view-container').style.display = 'none';
+
+  // Add listener for the button in the drop zone
+  document.getElementById('drop-zone-upload').addEventListener('click', () => {
+    document.getElementById('file-picker').click();
+  });
+}
+
+/* ============================================================
+   File Picker Setup
+   ============================================================ */
+
+function setupFilePicker() {
+  const picker = document.getElementById('file-picker');
+  const btn = document.getElementById('import-btn');
+
+  btn.addEventListener('click', () => {
+    picker.click();
+  });
+
+  picker.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (!file.name.endsWith('.gnucash')) {
+        alert('Veuillez choisir un fichier .gnucash');
+        return;
+      }
+      loadFile(file);
+      // Reset picker so the same file can be picked again if needed
+      picker.value = '';
+    }
+  });
 }
 
 /* ============================================================
@@ -153,4 +190,5 @@ async function loadFile(file) {
 
 // Boot
 setupDragAndDrop();
+setupFilePicker();
 bootstrap();
