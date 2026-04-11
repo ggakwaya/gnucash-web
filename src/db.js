@@ -218,6 +218,48 @@ export function getRevenueByActivity() {
   `);
 }
 
+/* ================== 2025 REPORTING ================== */
+
+/**
+ * Get all filtered splits for the 2025 exercise.
+ */
+export function getSplits2025() {
+  return query(`
+    SELECT
+      a.name as account_name,
+      a.account_type,
+      a.code,
+      a.guid as account_guid,
+      a.parent_guid,
+      CAST(s.value_num AS REAL) / s.value_denom as amount,
+      t.post_date,
+      t.description
+    FROM splits s
+    JOIN transactions t ON s.tx_guid = t.guid
+    JOIN accounts a ON s.account_guid = a.guid
+    WHERE t.post_date >= '2025-01-01' AND t.post_date <= '2025-12-31 23:59:59'
+  `);
+}
+
+/**
+ * Get current balance for all accounts at end of 2025
+ */
+export function getBalancesEnd2025() {
+  return query(`
+    SELECT
+      a.name as account_name,
+      a.account_type,
+      a.code,
+      a.guid as account_guid,
+      SUM(CAST(s.value_num AS REAL) / s.value_denom) as balance
+    FROM splits s
+    JOIN transactions t ON s.tx_guid = t.guid
+    JOIN accounts a ON s.account_guid = a.guid
+    WHERE t.post_date <= '2025-12-31 23:59:59'
+    GROUP BY a.guid
+  `);
+}
+
 /* ================== GENERAL LEDGER ================== */
 
 /**
@@ -281,6 +323,41 @@ export function getTransactionSplits(txGuid) {
     WHERE s.tx_guid = ?
     ORDER BY s.value_num DESC
   `, [txGuid]);
+}
+
+/* ================== GENERIC FINANCIAL REPORTS ================== */
+
+/**
+ * Get aggregated balances for all accounts as of a specific date.
+ */
+export function getAccountBalancesAsOf(date) {
+  return query(`
+    SELECT
+      a.guid, a.account_type, a.name, a.code, a.parent_guid,
+      COALESCE(SUM(CAST(s.value_num AS REAL) / s.value_denom), 0) as balance
+    FROM accounts a
+    LEFT JOIN splits s ON s.account_guid = a.guid
+    LEFT JOIN transactions t ON s.tx_guid = t.guid
+    WHERE (t.post_date <= ?) OR s.guid IS NULL
+    GROUP BY a.guid
+  `, [date + ' 23:59:59']);
+}
+
+/**
+ * Get balance deltas (sums of splits) for a specific date range.
+ * Useful for P&L and Cash Flow.
+ */
+export function getAccountBalancesDelta(startDate, endDate) {
+  return query(`
+    SELECT
+      a.guid, a.account_type, a.name, a.code, a.parent_guid,
+      COALESCE(SUM(CAST(s.value_num AS REAL) / s.value_denom), 0) as balance
+    FROM accounts a
+    LEFT JOIN splits s ON s.account_guid = a.guid
+    LEFT JOIN transactions t ON s.tx_guid = t.guid
+    WHERE (t.post_date >= ? AND t.post_date <= ?) OR s.guid IS NULL
+    GROUP BY a.guid
+  `, [startDate + ' 00:00:00', endDate + ' 23:59:59']);
 }
 
 /**

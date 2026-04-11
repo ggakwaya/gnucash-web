@@ -10,6 +10,9 @@ import { registerRoute, initRouter } from './router.js';
 import { renderDashboard } from './views/dashboard.js';
 import { renderAccounts } from './views/accounts.js';
 import { renderLedger } from './views/ledger.js';
+import { renderReport2025 } from './views/report2025.js';
+import { renderSbqcValuation } from './views/sbqc.js';
+import { renderFinancialReports } from './views/financial-reports.js';
 
 let routerStarted = false;
 
@@ -19,7 +22,7 @@ async function bootstrap() {
     await initDatabase();
     onDatabaseReady();
   } catch (error) {
-    console.error('Erreur d\'initialisation :', error);
+    console.error("Erreur d'initialisation :", error);
     showDropZone('Aucune base de données par défaut. Glissez-déposez un fichier .gnucash pour commencer.');
   }
 }
@@ -43,6 +46,9 @@ function onDatabaseReady(fileName) {
   registerRoute('dashboard', renderDashboard);
   registerRoute('accounts', renderAccounts);
   registerRoute('ledger', renderLedger);
+  registerRoute('report-2025', renderReport2025);
+  registerRoute('sbqc-valuation', renderSbqcValuation);
+  registerRoute('financial-reports', renderFinancialReports);
 
   // Hide loading, show content
   document.getElementById('loading-screen').style.display = 'none';
