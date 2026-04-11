@@ -143,7 +143,8 @@ function renderActiveTab() {
 // ======================== TAB RENDERS ========================
 
 function renderPL(container) {
-  const deltas = getAccountBalancesDelta(currentDateStart, currentDateEnd);
+  const deltasRaw = getAccountBalancesDelta(currentDateStart, currentDateEnd);
+  const deltas = sortAndFlattenTree(deltasRaw);
   
   let incomeHTML = '';
   let expenseHTML = '';
@@ -161,31 +162,41 @@ function renderPL(container) {
     </div>
   `;
 
-  // Sort and filter logically
-  const incomeAccounts = deltas.filter(a => a.account_type === 'INCOME' && Math.abs(a.balance) > 0).sort((a,b) => Math.abs(b.balance) - Math.abs(a.balance));
-  const expenseAccounts = deltas.filter(a => a.account_type === 'EXPENSE' && Math.abs(a.balance) > 0).sort((a,b) => Math.abs(b.balance) - Math.abs(a.balance));
+  // Filter logically
+  const incomeAccounts = deltas.filter(a => a.account_type === 'INCOME');
+  const expenseAccounts = deltas.filter(a => a.account_type === 'EXPENSE');
 
   incomeAccounts.forEach(a => {
     const isSbqc = a.code?.startsWith('42') || /sbqc|splitboard/i.test(a.name);
     if(isolateSbqc && !isSbqc) return;
     
-    let val = Math.abs(a.balance);
-    totalIncome += val;
-    incomeHTML += `<tr><td class="fr-indent">${a.name} ${a.code ? '('+a.code+')' : ''}</td><td style="text-align: right;">${formatCAD(val)}</td></tr>`;
+    let val = -a.balance; // Income (Credit) is negative in DB, convert to positive display
+    let indent = Math.max(0, a.depth - 1) * 1.5;
+    let paddingStyle = `padding-left: calc(1rem + ${indent}rem);`;
+
+    if (Math.abs(val) > 0.01 || a.children.length > 0) {
+      totalIncome += val;
+      incomeHTML += `<tr><td style="${paddingStyle}">${a.name} ${a.code ? '('+a.code+')' : ''}</td><td style="text-align: right;">${formatCAD(val)}</td></tr>`;
+    }
   });
 
   expenseAccounts.forEach(a => {
     const isSbqc = a.code?.startsWith('52') || /sbqc|splitboard|équipement|atelier/i.test(a.name);
     const isCommon = a.code?.startsWith('50') || /commune|general|bancaire/i.test(a.name);
     
-    let val = Math.abs(a.balance);
+    let val = a.balance; // Expense (Debit) is positive in DB
     if(isolateSbqc) {
       if(!isSbqc && !isCommon) return;
       if(isCommon) val = val / 2; // 50% split assumption
     }
     
-    totalExpense += val;
-    expenseHTML += `<tr><td class="fr-indent">${a.name} ${a.code ? '('+a.code+')' : ''}</td><td style="text-align: right;">${formatCAD(val)}</td></tr>`;
+    let indent = Math.max(0, a.depth - 1) * 1.5;
+    let paddingStyle = `padding-left: calc(1rem + ${indent}rem);`;
+
+    if (Math.abs(val) > 0.01 || a.children.length > 0) {
+      totalExpense += val;
+      expenseHTML += `<tr><td style="${paddingStyle}">${a.name} ${a.code ? '('+a.code+')' : ''}</td><td style="text-align: right;">${formatCAD(val)}</td></tr>`;
+    }
   });
 
   const netIncome = totalIncome - totalExpense;
@@ -218,9 +229,36 @@ function renderPL(container) {
   });
 }
 
+function sortAndFlattenTree(accounts) {
+  const map = {};
+  accounts.forEach(a => map[a.guid] = { ...a, children: [] });
+  const roots = [];
+
+  accounts.forEach(a => {
+    if (a.parent_guid && map[a.parent_guid]) {
+      map[a.parent_guid].children.push(map[a.guid]);
+    } else {
+      roots.push(map[a.guid]);
+    }
+  });
+
+  const flat = [];
+  function traverse(node, depth) {
+    node.depth = depth;
+    flat.push(node);
+    node.children.sort((a,b) => a.name.localeCompare(b.name));
+    node.children.forEach(c => traverse(c, depth + 1));
+  }
+  
+  roots.sort((a,b) => a.name.localeCompare(b.name));
+  roots.forEach(r => traverse(r, 0));
+  
+  return flat;
+}
+
 function renderBalanceSheet(container) {
-  // Balance sheet is AS OF the end date.
-  const balances = getAccountBalancesAsOf(currentDateEnd);
+  const balancesRaw = getAccountBalancesAsOf(currentDateEnd);
+  const balances = sortAndFlattenTree(balancesRaw);
   
   let assetsHtml = '';
   let liabHtml = '';
@@ -230,36 +268,46 @@ function renderBalanceSheet(container) {
   let totalLiab = 0;
   let totalEquity = 0;
 
-  // Groupings based on GnuCash mapping (GnuCash Assets are usually positive (debit), Liab/Equity are negative (credit))
   balances.forEach(a => {
     let type = a.account_type;
     let bal = a.balance; // Asset > 0 is debit
-    if(Math.abs(bal) < 0.01) return;
+    
+    // Calculate indentation based on tree depth (minus 1 to ignore ROOT)
+    let indent = Math.max(0, a.depth - 1) * 1.5;
+    let paddingStyle = `padding-left: calc(1rem + ${indent}rem);`;
 
     if (['ASSET', 'BANK', 'CASH', 'RECEIVABLE', 'MUTUAL'].includes(type)) {
       totalAssets += bal;
-      assetsHtml += `<tr><td class="fr-indent">${a.name}</td><td style="text-align: right;">${formatCAD(bal)}</td></tr>`;
+      if (Math.abs(bal) > 0.01 || a.children.length > 0) {
+        assetsHtml += `<tr><td style="${paddingStyle}">${a.name}</td><td style="text-align: right;">${formatCAD(bal)}</td></tr>`;
+      }
     } 
     else if (['LIABILITY', 'CREDIT', 'PAYABLE'].includes(type)) {
       let dispBal = -bal; // Credit is negative in DB, display positive for Liab
       totalLiab += dispBal;
-      liabHtml += `<tr><td class="fr-indent">${a.name}</td><td style="text-align: right;">${formatCAD(dispBal)}</td></tr>`;
+      if (Math.abs(bal) > 0.01 || a.children.length > 0) {
+        liabHtml += `<tr><td style="${paddingStyle}">${a.name}</td><td style="text-align: right;">${formatCAD(dispBal)}</td></tr>`;
+      }
     }
     else if (['EQUITY'].includes(type)) {
       let dispBal = -bal; // Credit is negative
       totalEquity += dispBal;
-      equityHtml += `<tr><td class="fr-indent">${a.name}</td><td style="text-align: right;">${formatCAD(dispBal)}</td></tr>`;
+      if (Math.abs(bal) > 0.01 || a.children.length > 0) {
+        let isNegative = dispBal < 0;
+        let valFmt = isNegative ? `<span style="color: var(--color-negative)">${formatCAD(dispBal)}</span>` : formatCAD(dispBal);
+        equityHtml += `<tr><td style="${paddingStyle}">${a.name}</td><td style="text-align: right;">${valFmt}</td></tr>`;
+      }
     }
   });
 
   // Calculate Retained Earnings (Net Income of all time)
-  // Which is Income - Expenses of all time up to currentDateEnd
-  const incomeBalances = balances.filter(a => a.account_type === 'INCOME').reduce((s, a) => s + Math.abs(a.balance), 0);
-  const expenseBalances = balances.filter(a => a.account_type === 'EXPENSE').reduce((s, a) => s + Math.abs(a.balance), 0);
-  const retainedEarnings = incomeBalances - expenseBalances;
+  // Income (Credit) is negative, Expense (Debit) is positive. Net Income = -(Income + Expense)
+  const retainedEarnings = -balancesRaw.reduce((sum, a) => ['INCOME', 'EXPENSE'].includes(a.account_type) ? sum + a.balance : sum, 0);
   
   totalEquity += retainedEarnings;
-  equityHtml += `<tr><td class="fr-indent"><strong>Bénéfice Net (et reporté)</strong></td><td style="text-align: right;"><strong>${formatCAD(retainedEarnings)}</strong></td></tr>`;
+  
+  let retEarnFmt = retainedEarnings < 0 ? `<span style="color: var(--color-negative)">${formatCAD(retainedEarnings)}</span>` : formatCAD(retainedEarnings);
+  equityHtml += `<tr><td style="padding-left: 2.5rem;"><strong>Bénéfices non répartis (Net Income)</strong></td><td style="text-align: right;"><strong>${retEarnFmt}</strong></td></tr>`;
 
   container.innerHTML = `
     <h3 class="fr-section-title">Actif</h3>
@@ -290,25 +338,34 @@ function renderBalanceSheet(container) {
 }
 
 function renderEquity(container) {
-  const deltas = getAccountBalancesDelta(currentDateStart, currentDateEnd);
-  // Opening equity = As of (startDate - 1 day)
+  const deltasRaw = getAccountBalancesDelta(currentDateStart, currentDateEnd);
+  const deltas = sortAndFlattenTree(deltasRaw);
+
   const prevDate = new Date(currentDateStart);
   prevDate.setDate(prevDate.getDate() - 1);
   const openingBalances = getAccountBalancesAsOf(prevDate.toISOString().split('T')[0]);
   
-  let openingNetIncome = openingBalances.filter(a => a.account_type === 'INCOME').reduce((s, a) => s + Math.abs(a.balance), 0) - openingBalances.filter(a => a.account_type === 'EXPENSE').reduce((s, a) => s + Math.abs(a.balance), 0);
+  let openingNetIncome = -openingBalances.reduce((sum, a) => ['INCOME', 'EXPENSE'].includes(a.account_type) ? sum + a.balance : sum, 0);
   let openingEquityRaw = openingBalances.filter(a => a.account_type === 'EQUITY').reduce((s, a) => s + (-a.balance), 0);
   let openingEquityTotal = openingEquityRaw + openingNetIncome;
 
-  let periodNetIncome = deltas.filter(a => a.account_type === 'INCOME').reduce((s, a) => s + Math.abs(a.balance), 0) - deltas.filter(a => a.account_type === 'EXPENSE').reduce((s, a) => s + Math.abs(a.balance), 0);
+  let periodNetIncome = -deltasRaw.reduce((sum, a) => ['INCOME', 'EXPENSE'].includes(a.account_type) ? sum + a.balance : sum, 0);
   
   let equityHTML = '';
   let periodEquityDeltas = 0;
 
-  deltas.filter(a => a.account_type === 'EQUITY' && Math.abs(a.balance) > 0).forEach(a => {
+  deltas.filter(a => a.account_type === 'EQUITY').forEach(a => {
     let dispBal = -a.balance; // Credit is positive for equity
-    periodEquityDeltas += dispBal;
-    equityHTML += `<tr><td class="fr-indent">${dispBal >= 0 ? 'Apport' : 'Retrait'} : ${a.name}</td><td style="text-align: right;">${formatCAD(dispBal)}</td></tr>`;
+    
+    let indent = Math.max(0, a.depth - 1) * 1.5;
+    let paddingStyle = `padding-left: calc(1rem + ${indent}rem);`;
+
+    if (Math.abs(dispBal) > 0.01 || a.children.length > 0) {
+      periodEquityDeltas += dispBal;
+      let isNegative = dispBal < 0;
+      let valFmt = isNegative ? `<span style="color: var(--color-negative)">${formatCAD(dispBal)}</span>` : formatCAD(dispBal);
+      equityHTML += `<tr><td style="${paddingStyle}">${a.name}</td><td style="text-align: right;">${valFmt}</td></tr>`;
+    }
   });
 
   const closingEquity = openingEquityTotal + periodNetIncome + periodEquityDeltas;

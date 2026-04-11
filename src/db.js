@@ -338,9 +338,9 @@ export function getAccountBalancesAsOf(date) {
     FROM accounts a
     LEFT JOIN splits s ON s.account_guid = a.guid
     LEFT JOIN transactions t ON s.tx_guid = t.guid
-    WHERE t.post_date <= ? OR s.guid IS NULL
+    WHERE (t.post_date <= ?) OR s.guid IS NULL
     GROUP BY a.guid
-  `, [date]);
+  `, [date + ' 23:59:59']);
 }
 
 /**
@@ -357,7 +357,7 @@ export function getAccountBalancesDelta(startDate, endDate) {
     LEFT JOIN transactions t ON s.tx_guid = t.guid
     WHERE (t.post_date >= ? AND t.post_date <= ?) OR s.guid IS NULL
     GROUP BY a.guid
-  `, [startDate, endDate]);
+  `, [startDate + ' 00:00:00', endDate + ' 23:59:59']);
 }
 
 /**
