@@ -187,16 +187,16 @@ function renderChart() {
           size: '70%',
           labels: {
             show: true,
-            name: { color: '#8b8fa8', fontSize: '14px' },
-            value: { color: '#e8eaf0', fontSize: '24px', fontWeight: 600, formatter: v => formatCAD(v, false) },
+            name: { color: '#6b6c72', fontSize: '14px' },
+            value: { color: '#393a3d', fontSize: '24px', fontWeight: 600, formatter: v => formatCAD(v, false) },
             total: { show: true, color: '#22d3ee', label: 'Prix Cible', fontSize: '16px', formatter: w => formatCAD(w.globals.seriesTotals.reduce((a, b) => a + b, 0), false) }
           }
         }
       }
     },
     stroke: { width: 0 },
-    legend: { position: 'bottom', labels: { colors: '#8b8fa8' } },
-    tooltip: { theme: 'dark', y: { formatter: (v) => formatCAD(v) } },
+    legend: { position: 'bottom', labels: { colors: '#6b6c72' } },
+    tooltip: { theme: 'light', y: { formatter: (v) => formatCAD(v) } },
     dataLabels: { enabled: false },
     animations: { enabled: false } // Disabled for smooth slider experience
   };

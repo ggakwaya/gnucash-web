@@ -336,15 +336,15 @@ function renderSaisonnaliteChart(monthlyData) {
   const options = {
     series: series,
     chart: { type: 'bar', height: 320, background: 'transparent', stacked: true, toolbar: { show: false }, fontFamily: 'Inter, sans-serif' },
-    colors: ['#34d399', '#22d3ee', '#8b8fa8'],
+    colors: ['#34d399', '#22d3ee', '#6b6c72'],
     plotOptions: { bar: { borderRadius: 4, columnWidth: '60%' } },
     dataLabels: { enabled: false },
     stroke: { width: 1, colors: ['#0e0e1e'] },
-    xaxis: { categories: months.map(formatMonth), labels: { style: { colors: '#8b8fa8', fontSize: '11px' } }, axisBorder: { show: false }, axisTicks: { show: false } },
-    yaxis: { labels: { style: { colors: '#8b8fa8', fontSize: '11px' }, formatter: (v) => formatCAD(v, false) } },
+    xaxis: { categories: months.map(formatMonth), labels: { style: { colors: '#6b6c72', fontSize: '11px' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+    yaxis: { labels: { style: { colors: '#6b6c72', fontSize: '11px' }, formatter: (v) => formatCAD(v, false) } },
     grid: { borderColor: 'rgba(255,255,255,0.04)', strokeDashArray: 4 },
-    tooltip: { theme: 'dark', y: { formatter: (v) => formatCAD(v) } },
-    legend: { labels: { colors: '#8b8fa8' }, position: 'top' },
+    tooltip: { theme: 'light', y: { formatter: (v) => formatCAD(v) } },
+    legend: { labels: { colors: '#6b6c72' }, position: 'top' },
   };
 
   const chart = new ApexCharts(document.getElementById('chart-monthly'), options);
@@ -366,10 +366,10 @@ function renderExpensesChart(elementId, expensesMap, colorPalette) {
     labels: labels,
     chart: { type: 'donut', height: 280, background: 'transparent', fontFamily: 'Inter, sans-serif' },
     colors: colorPalette,
-    plotOptions: { pie: { donut: { size: '65%', labels: { show: true, name: { color: '#8b8fa8' }, value: { color: '#e8eaf0', formatter: v => formatCAD(v, false) }, total: { show: true, color: '#8b8fa8', label: 'Total', formatter: w => formatCAD(w.globals.seriesTotals.reduce((a, b) => a + b, 0), false) } } } } },
+    plotOptions: { pie: { donut: { size: '65%', labels: { show: true, name: { color: '#6b6c72' }, value: { color: '#393a3d', formatter: v => formatCAD(v, false) }, total: { show: true, color: '#6b6c72', label: 'Total', formatter: w => formatCAD(w.globals.seriesTotals.reduce((a, b) => a + b, 0), false) } } } } },
     stroke: { width: 0 },
-    legend: { position: 'right', labels: { colors: '#8b8fa8' }, fontSize: '11px' },
-    tooltip: { theme: 'dark', y: { formatter: (v) => formatCAD(v) } },
+    legend: { position: 'right', labels: { colors: '#6b6c72' }, fontSize: '11px' },
+    tooltip: { theme: 'light', y: { formatter: (v) => formatCAD(v) } },
     dataLabels: { enabled: false },
   };
 

@@ -12,6 +12,7 @@ import { renderAccounts } from './views/accounts.js';
 import { renderLedger } from './views/ledger.js';
 import { renderReport2025 } from './views/report2025.js';
 import { renderSbqcValuation } from './views/sbqc.js';
+import { renderFinancialReports } from './views/financial-reports.js';
 
 let routerStarted = false;
 
@@ -47,6 +48,7 @@ function onDatabaseReady(fileName) {
   registerRoute('ledger', renderLedger);
   registerRoute('report-2025', renderReport2025);
   registerRoute('sbqc-valuation', renderSbqcValuation);
+  registerRoute('financial-reports', renderFinancialReports);
 
   // Hide loading, show content
   document.getElementById('loading-screen').style.display = 'none';

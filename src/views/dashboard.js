@@ -127,13 +127,13 @@ function renderMonthlyChart({ months, revenue, expenses }) {
     dataLabels: { enabled: false },
     xaxis: {
       categories: months.map(formatMonth),
-      labels: { style: { colors: '#8b8fa8', fontSize: '11px' } },
+      labels: { style: { colors: '#6b6c72', fontSize: '11px' } },
       axisBorder: { show: false },
       axisTicks: { show: false },
     },
     yaxis: {
       labels: {
-        style: { colors: '#8b8fa8', fontSize: '11px' },
+        style: { colors: '#6b6c72', fontSize: '11px' },
         formatter: (v) => formatCAD(v, false),
       },
     },
@@ -142,17 +142,17 @@ function renderMonthlyChart({ months, revenue, expenses }) {
       strokeDashArray: 4,
     },
     tooltip: {
-      theme: 'dark',
+      theme: 'light',
       y: { formatter: (v) => formatCAD(v) },
     },
     legend: {
-      labels: { colors: '#8b8fa8' },
+      labels: { colors: '#6b6c72' },
       position: 'top',
     },
     fill: {
       type: 'gradient',
       gradient: {
-        shade: 'dark',
+        shade: 'light',
         type: 'vertical',
         opacityFrom: 0.9,
         opacityTo: 0.6,
@@ -203,13 +203,13 @@ function renderProfitChart({ months, revenue, expenses }) {
     },
     xaxis: {
       categories: months.map(formatMonth),
-      labels: { style: { colors: '#8b8fa8', fontSize: '11px' } },
+      labels: { style: { colors: '#6b6c72', fontSize: '11px' } },
       axisBorder: { show: false },
       axisTicks: { show: false },
     },
     yaxis: {
       labels: {
-        style: { colors: '#8b8fa8', fontSize: '11px' },
+        style: { colors: '#6b6c72', fontSize: '11px' },
         formatter: (v) => formatCAD(v, false),
       },
     },
@@ -218,7 +218,7 @@ function renderProfitChart({ months, revenue, expenses }) {
       strokeDashArray: 4,
     },
     tooltip: {
-      theme: 'dark',
+      theme: 'light',
       y: { formatter: (v) => formatCAD(v) },
     },
     markers: {
@@ -260,10 +260,10 @@ function renderExpenseDonut(data) {
           size: '70%',
           labels: {
             show: true,
-            name: { show: true, color: '#8b8fa8', fontSize: '12px' },
+            name: { show: true, color: '#6b6c72', fontSize: '12px' },
             value: {
               show: true,
-              color: '#e8eaf0',
+              color: '#393a3d',
               fontSize: '18px',
               fontWeight: 700,
               fontFamily: 'JetBrains Mono',
@@ -272,7 +272,7 @@ function renderExpenseDonut(data) {
             total: {
               show: true,
               label: 'Total',
-              color: '#8b8fa8',
+              color: '#6b6c72',
               fontSize: '12px',
               formatter: (w) => formatCAD(w.globals.seriesTotals.reduce((a, b) => a + b, 0)),
             },
@@ -283,11 +283,11 @@ function renderExpenseDonut(data) {
     stroke: { width: 0 },
     legend: {
       position: 'bottom',
-      labels: { colors: '#8b8fa8' },
+      labels: { colors: '#6b6c72' },
       fontSize: '11px',
     },
     tooltip: {
-      theme: 'dark',
+      theme: 'light',
       y: { formatter: (v) => formatCAD(v) },
     },
     dataLabels: { enabled: false },
@@ -327,7 +327,7 @@ function renderActivityChart(data) {
     fill: {
       type: 'gradient',
       gradient: {
-        shade: 'dark',
+        shade: 'light',
         type: 'horizontal',
         gradientToColors: ['#22d3ee'],
         opacityFrom: 1,
@@ -339,7 +339,7 @@ function renderActivityChart(data) {
       enabled: true,
       formatter: (v) => formatCAD(v),
       style: {
-        colors: ['#e8eaf0'],
+        colors: ['#393a3d'],
         fontSize: '12px',
         fontFamily: 'JetBrains Mono',
         fontWeight: 500,
@@ -348,7 +348,7 @@ function renderActivityChart(data) {
     },
     xaxis: {
       labels: {
-        style: { colors: '#8b8fa8', fontSize: '11px' },
+        style: { colors: '#6b6c72', fontSize: '11px' },
         formatter: (v) => formatCAD(v, false),
       },
       axisBorder: { show: false },
@@ -356,7 +356,7 @@ function renderActivityChart(data) {
     },
     yaxis: {
       labels: {
-        style: { colors: '#e8eaf0', fontSize: '12px', fontWeight: 500 },
+        style: { colors: '#393a3d', fontSize: '12px', fontWeight: 500 },
       },
     },
     categories: data.map(d => d.name),
@@ -367,7 +367,7 @@ function renderActivityChart(data) {
       yaxis: { lines: { show: false } },
     },
     tooltip: {
-      theme: 'dark',
+      theme: 'light',
       y: { formatter: (v) => formatCAD(v) },
     },
     legend: { show: false },

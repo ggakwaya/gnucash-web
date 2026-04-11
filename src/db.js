@@ -325,6 +325,41 @@ export function getTransactionSplits(txGuid) {
   `, [txGuid]);
 }
 
+/* ================== GENERIC FINANCIAL REPORTS ================== */
+
+/**
+ * Get aggregated balances for all accounts as of a specific date.
+ */
+export function getAccountBalancesAsOf(date) {
+  return query(`
+    SELECT
+      a.guid, a.account_type, a.name, a.code, a.parent_guid,
+      COALESCE(SUM(CAST(s.value_num AS REAL) / s.value_denom), 0) as balance
+    FROM accounts a
+    LEFT JOIN splits s ON s.account_guid = a.guid
+    LEFT JOIN transactions t ON s.tx_guid = t.guid
+    WHERE t.post_date <= ? OR s.guid IS NULL
+    GROUP BY a.guid
+  `, [date]);
+}
+
+/**
+ * Get balance deltas (sums of splits) for a specific date range.
+ * Useful for P&L and Cash Flow.
+ */
+export function getAccountBalancesDelta(startDate, endDate) {
+  return query(`
+    SELECT
+      a.guid, a.account_type, a.name, a.code, a.parent_guid,
+      COALESCE(SUM(CAST(s.value_num AS REAL) / s.value_denom), 0) as balance
+    FROM accounts a
+    LEFT JOIN splits s ON s.account_guid = a.guid
+    LEFT JOIN transactions t ON s.tx_guid = t.guid
+    WHERE (t.post_date >= ? AND t.post_date <= ?) OR s.guid IS NULL
+    GROUP BY a.guid
+  `, [startDate, endDate]);
+}
+
 /**
  * Get all distinct account names for the filter dropdown.
  */

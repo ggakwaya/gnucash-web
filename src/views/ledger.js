@@ -12,21 +12,21 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 
 let gridApi = null;
 
-const myDarkTheme = themeQuartz.withParams({
-  accentColor: '#6c8cff',
-  backgroundColor: '#0e0e1e',
-  borderColor: 'rgba(255, 255, 255, 0.06)',
-  browserColorScheme: 'dark',
-  chromeBackgroundColor: 'rgba(18, 18, 42, 0.8)',
+const myLightTheme = themeQuartz.withParams({
+  accentColor: '#2ca01c',
+  backgroundColor: '#ffffff',
+  borderColor: '#e5e7eb',
+  browserColorScheme: 'light',
+  chromeBackgroundColor: '#f9fafb',
   fontFamily: 'Inter, sans-serif',
   fontSize: 13,
-  foregroundColor: '#e8eaf0',
-  headerBackgroundColor: 'rgba(18, 18, 42, 0.8)',
+  foregroundColor: '#393a3d',
+  headerBackgroundColor: '#f9fafb',
   headerFontWeight: 600,
-  headerTextColor: '#8b8fa8',
-  oddRowBackgroundColor: 'rgba(14, 14, 30, 0.5)',
-  rowHoverColor: 'rgba(108, 140, 255, 0.06)',
-  selectedRowBackgroundColor: 'rgba(108, 140, 255, 0.1)',
+  headerTextColor: '#6b6c72',
+  oddRowBackgroundColor: '#fcfcfd',
+  rowHoverColor: 'rgba(44, 160, 28, 0.04)',
+  selectedRowBackgroundColor: 'rgba(44, 160, 28, 0.1)',
   spacing: 6,
 });
 
@@ -151,7 +151,7 @@ function initGrid(data) {
       flex: 1,
       minWidth: 150,
       filter: false,
-      cellStyle: { color: '#8b8fa8', fontSize: '12px' },
+      cellStyle: { color: '#6b6c72', fontSize: '12px' },
       valueFormatter: (p) => p.value || '—',
     },
     {
@@ -160,7 +160,7 @@ function initGrid(data) {
       flex: 1,
       minWidth: 150,
       filter: false,
-      cellStyle: { color: '#8b8fa8', fontSize: '12px' },
+      cellStyle: { color: '#6b6c72', fontSize: '12px' },
       valueFormatter: (p) => p.value || '—',
     },
     {
@@ -184,7 +184,7 @@ function initGrid(data) {
   ];
 
   const gridOptions = {
-    theme: myDarkTheme,
+    theme: myLightTheme,
     columnDefs,
     rowData: data,
     pagination: true,
