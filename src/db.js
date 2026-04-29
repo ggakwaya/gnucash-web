@@ -7,6 +7,7 @@ import initSqlJs from 'sql.js';
 
 let db = null;
 let SQL = null;
+let currentDbName = null;
 
 /**
  * Initialize sql.js WASM engine (call once).
@@ -22,13 +23,30 @@ async function ensureSqlReady() {
 
 /**
  * Initialize sql.js and open the default GnuCash database from public/.
+ * The filename is resolved from /db.config.json so it never needs to be
+ * hardcoded in source — just update db.config.json when the file changes.
  */
 export async function initDatabase() {
   await ensureSqlReady();
 
-  const response = await fetch('/2025-2271724025.gnucash');
+  // Resolve the default DB filename from config (avoids hardcoding)
+  const configResponse = await fetch('/db.config.json');
+  if (!configResponse.ok) {
+    throw new Error('db.config.json introuvable — impossible de charger la base par défaut.');
+  }
+  const config = await configResponse.json();
+  const fileName = config.defaultDb;
+  if (!fileName) {
+    throw new Error('db.config.json ne contient pas de clé "defaultDb".');
+  }
+
+  const response = await fetch(`/${fileName}`);
+  if (!response.ok) {
+    throw new Error(`Fichier introuvable : ${fileName}`);
+  }
   const buffer = await response.arrayBuffer();
   db = new SQL.Database(new Uint8Array(buffer));
+  currentDbName = fileName;
 
   return db;
 }
@@ -37,7 +55,7 @@ export async function initDatabase() {
  * Load a database from an ArrayBuffer (drag-and-drop / file picker).
  * Closes the previous database if any.
  */
-export async function loadDatabaseFromBuffer(arrayBuffer) {
+export async function loadDatabaseFromBuffer(arrayBuffer, fileName = null) {
   await ensureSqlReady();
 
   if (db) {
@@ -46,7 +64,15 @@ export async function loadDatabaseFromBuffer(arrayBuffer) {
   }
 
   db = new SQL.Database(new Uint8Array(arrayBuffer));
+  currentDbName = fileName || null;
   return db;
+}
+
+/**
+ * Get the name of the currently loaded database file.
+ */
+export function getCurrentDbName() {
+  return currentDbName;
 }
 
 /**

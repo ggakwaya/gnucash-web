@@ -5,7 +5,7 @@
  */
 
 import './styles/index.css';
-import { initDatabase, loadDatabaseFromBuffer, getDatabaseInfo } from './db.js';
+import { initDatabase, loadDatabaseFromBuffer, getDatabaseInfo, getCurrentDbName } from './db.js';
 import { registerRoute, initRouter } from './router.js';
 import { renderDashboard } from './views/dashboard.js';
 import { renderAccounts } from './views/accounts.js';
@@ -31,15 +31,20 @@ async function bootstrap() {
  * Called whenever a database is (re)loaded.
  */
 function onDatabaseReady(fileName) {
-  // Update DB info in sidebar
+  // Determine the DB name to display
+  const dbName = fileName || getCurrentDbName() || 'Base de données';
   const dbInfo = getDatabaseInfo();
   const dbInfoEl = document.getElementById('db-info');
-  const label = fileName
-    ? `${fileName} · ${dbInfo.transactionCount} tx`
-    : `${dbInfo.transactionCount} tx · ${dbInfo.accountCount} comptes · ${dbInfo.minDate.substring(0, 4)}`;
+
+  // Strip the .gnucash extension for a cleaner display
+  const displayName = dbName.replace(/\.gnucash$/i, '');
+
   dbInfoEl.innerHTML = `
     <span class="db-icon">💾</span>
-    <span class="db-label">${label}</span>
+    <span class="db-details">
+      <span class="db-name" title="${dbName}">${displayName}</span>
+      <span class="db-stats">${dbInfo.transactionCount} tx · ${dbInfo.accountCount} comptes · ${dbInfo.minDate.substring(0, 4) || '?'}</span>
+    </span>
   `;
 
   // Register views (idempotent)
@@ -180,7 +185,7 @@ async function loadFile(file) {
 
   try {
     const arrayBuffer = await file.arrayBuffer();
-    await loadDatabaseFromBuffer(arrayBuffer);
+    await loadDatabaseFromBuffer(arrayBuffer, file.name);
     onDatabaseReady(file.name);
   } catch (error) {
     console.error('Erreur de chargement :', error);
