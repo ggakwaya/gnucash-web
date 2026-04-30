@@ -108,8 +108,8 @@ function buildLayout(minYear, maxYear) {
       .tax-gross-dimmed { color: var(--text-muted); }
 
       /* Subtotal / Total */
-      .tax-subtotal td { font-weight: 600; border-top: 1px dashed var(--border-card); background: #f9fafb; }
-      .tax-total td { font-weight: 700; border-top: 2px solid var(--border-card); background: #f4f5f8; font-size: 1rem; }
+      .tax-subtotal td { font-weight: 600; border-top: 1px dashed var(--border-card); background: var(--bg-card-hover); }
+      .tax-total td { font-weight: 700; border-top: 2px solid var(--border-card); background: var(--bg-body); font-size: 1rem; }
 
       /* Section headers */
       .tax-section-header {

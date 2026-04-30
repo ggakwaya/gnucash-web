@@ -12,23 +12,42 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 
 let gridApi = null;
 
-const myLightTheme = themeQuartz.withParams({
-  accentColor: '#2ca01c',
-  backgroundColor: '#ffffff',
-  borderColor: '#e5e7eb',
-  browserColorScheme: 'light',
-  chromeBackgroundColor: '#f9fafb',
-  fontFamily: 'Inter, sans-serif',
-  fontSize: 13,
-  foregroundColor: '#393a3d',
-  headerBackgroundColor: '#f9fafb',
-  headerFontWeight: 600,
-  headerTextColor: '#6b6c72',
-  oddRowBackgroundColor: '#fcfcfd',
-  rowHoverColor: 'rgba(44, 160, 28, 0.04)',
-  selectedRowBackgroundColor: 'rgba(44, 160, 28, 0.1)',
-  spacing: 6,
-});
+function getGridTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  return themeQuartz.withParams(isDark ? {
+    accentColor: '#2ca01c',
+    backgroundColor: '#1e1e22',
+    borderColor: '#333338',
+    browserColorScheme: 'dark',
+    chromeBackgroundColor: '#252529',
+    fontFamily: 'Inter, sans-serif',
+    fontSize: 13,
+    foregroundColor: '#e8e9ec',
+    headerBackgroundColor: '#252529',
+    headerFontWeight: 600,
+    headerTextColor: '#a1a2a8',
+    oddRowBackgroundColor: '#1a1a1e',
+    rowHoverColor: 'rgba(44, 160, 28, 0.08)',
+    selectedRowBackgroundColor: 'rgba(44, 160, 28, 0.15)',
+    spacing: 6,
+  } : {
+    accentColor: '#2ca01c',
+    backgroundColor: '#ffffff',
+    borderColor: '#e5e7eb',
+    browserColorScheme: 'light',
+    chromeBackgroundColor: '#f9fafb',
+    fontFamily: 'Inter, sans-serif',
+    fontSize: 13,
+    foregroundColor: '#393a3d',
+    headerBackgroundColor: '#f9fafb',
+    headerFontWeight: 600,
+    headerTextColor: '#6b6c72',
+    oddRowBackgroundColor: '#fcfcfd',
+    rowHoverColor: 'rgba(44, 160, 28, 0.04)',
+    selectedRowBackgroundColor: 'rgba(44, 160, 28, 0.1)',
+    spacing: 6,
+  });
+}
 
 /**
  * Render the ledger view.
@@ -190,7 +209,7 @@ function initGrid(data) {
   ];
 
   const gridOptions = {
-    theme: myLightTheme,
+    theme: getGridTheme(),
     columnDefs,
     rowData: data,
     pagination: true,

@@ -82,8 +82,8 @@ function renderLayout(container) {
       .fr-table { width: 100%; border-collapse: collapse; margin-bottom: 2rem; font-family: var(--font-sans); }
       .fr-table td { padding: 8px 12px; border-bottom: 1px solid var(--border-subtle); color: var(--text-primary); }
       .fr-table .fr-indent { padding-left: 2rem; color: var(--text-secondary); font-size: 0.9rem; }
-      .fr-table .fr-subtotal td { font-weight: 600; border-top: 1px dashed var(--border-card); background: #f9fafb; font-size: 0.95rem; }
-      .fr-table .fr-total td { font-weight: 700; border-top: 2px solid var(--border-card); background: #f4f5f8; font-size: 1.05rem; }
+      .fr-table .fr-subtotal td { font-weight: 600; border-top: 1px dashed var(--border-card); background: var(--bg-card-hover); font-size: 0.95rem; }
+      .fr-table .fr-total td { font-weight: 700; border-top: 2px solid var(--border-card); background: var(--bg-body); font-size: 1.05rem; }
       
       @media print {
         .sidebar { display: none !important; }

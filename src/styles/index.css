@@ -92,11 +92,6 @@
   --shadow-elevated: 0 4px 6px rgba(0, 0, 0, 0.4);
 }
 
-[data-theme="dark"] .tax-subtotal td,
-[data-theme="dark"] .fr-table .fr-subtotal td { background: #252529; }
-[data-theme="dark"] .tax-total td,
-[data-theme="dark"] .fr-table .fr-total td { background: #2a2a30; }
-
 /* ---------- Skip Navigation (a11y) ---------- */
 .skip-nav {
   position: absolute;
@@ -909,14 +904,14 @@ body {
 .report-table .subtotal td {
   font-weight: 600;
   border-top: 1px solid var(--border-subtle);
-  background: #f9fafb;
+  background: var(--bg-card-hover);
 }
 
 .report-table .total td {
   font-weight: 700;
   font-size: 1.1em;
   border-top: 2px solid var(--border-subtle);
-  background: #f4f5f8;
+  background: var(--bg-body);
 }
 
 .report-table td.positive {
