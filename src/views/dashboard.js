@@ -4,8 +4,8 @@
  */
 
 import ApexCharts from 'apexcharts';
-import { getKPIs, getMonthlyRevenueExpenses, getExpenseBreakdown, getRevenueByActivity } from '../db.js';
-import { formatCAD, formatMonth } from '../utils.js';
+import { getKPIs, getMonthlyRevenueExpenses, getExpenseBreakdown, getRevenueByActivity, getDatabaseInfo } from '../db.js';
+import { formatCAD, formatMonth, safePercent, escapeHtml } from '../utils.js';
 
 // Store chart instances for cleanup
 let charts = [];
@@ -25,11 +25,13 @@ export async function renderDashboard(container) {
   const monthly = getMonthlyRevenueExpenses();
   const expBreakdown = getExpenseBreakdown();
   const revByActivity = getRevenueByActivity();
+  const dbInfo = getDatabaseInfo();
+  const maxYear = dbInfo.maxDate?.substring(0, 4) || new Date().getFullYear();
 
   container.innerHTML = `
     <div class="view-header">
       <h2 class="view-title">Tableau de bord</h2>
-      <p class="view-subtitle">Exercice 2025 — Vue d'ensemble financière</p>
+      <p class="view-subtitle">Exercice ${maxYear} — Vue d'ensemble financière</p>
     </div>
 
     <div class="kpi-grid">
@@ -54,7 +56,7 @@ export async function renderDashboard(container) {
         <div class="kpi-value ${kpis.profit >= 0 ? 'positive' : 'negative'}">${formatCAD(kpis.profit)}</div>
         <div class="kpi-detail">
           <span>${kpis.profit >= 0 ? '✅' : '⚠️'}</span>
-          <span>Marge : ${((kpis.profit / kpis.revenue) * 100).toFixed(1)}%</span>
+          <span>Marge : ${safePercent(kpis.profit, kpis.revenue)}</span>
         </div>
       </div>
       <div class="glass-card kpi-card count animate-in animate-in-delay-4" id="kpi-count">
@@ -314,7 +316,6 @@ function renderActivityChart(data) {
       fontFamily: 'Inter, sans-serif',
       animations: { enabled: true, easing: 'easeinout', speed: 800 },
     },
-    colors: ['#6c8cff'],
     plotOptions: {
       bar: {
         horizontal: true,

@@ -4,7 +4,7 @@
  */
 
 import { getAccountsWithBalances } from '../db.js';
-import { buildAccountTree, computeTreeBalances, getAccountIcon, formatCAD, displayBalance } from '../utils.js';
+import { buildAccountTree, computeTreeBalances, getAccountIcon, formatCAD, displayBalance, escapeHtml } from '../utils.js';
 import { navigateTo } from '../router.js';
 
 /**
@@ -146,9 +146,4 @@ function filterAccountTree(rootUl, query) {
       }
     }
   });
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

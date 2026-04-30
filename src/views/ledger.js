@@ -5,8 +5,8 @@
 
 import { createGrid } from 'ag-grid-community';
 import { AllCommunityModule, ModuleRegistry, themeQuartz } from 'ag-grid-community';
-import { getTransactions, getAccountList, getTransactionSplits } from '../db.js';
-import { formatCAD, formatDate } from '../utils.js';
+import { getTransactions, getAccountList, getTransactionSplits, getDatabaseInfo } from '../db.js';
+import { formatCAD, formatDate, escapeHtml } from '../utils.js';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
@@ -46,6 +46,12 @@ export async function renderLedger(container) {
   const navParams = window.__navParams || {};
   window.__navParams = {};
 
+  // P1: Dynamic dates from DB instead of hardcoded 2025
+  const dbInfo = getDatabaseInfo();
+  const maxYear = dbInfo.maxDate?.substring(0, 4) || String(new Date().getFullYear());
+  const defaultStart = `${maxYear}-01-01`;
+  const defaultEnd = `${maxYear}-12-31`;
+
   container.innerHTML = `
     <div class="view-header">
       <h2 class="view-title">Grand livre / Journal</h2>
@@ -56,17 +62,17 @@ export async function renderLedger(container) {
       <div class="ledger-filters">
         <div class="filter-group">
           <label class="filter-label" for="filter-start-date">Date début</label>
-          <input type="date" id="filter-start-date" class="filter-input" value="2025-01-01" />
+          <input type="date" id="filter-start-date" class="filter-input" value="${defaultStart}" />
         </div>
         <div class="filter-group">
           <label class="filter-label" for="filter-end-date">Date fin</label>
-          <input type="date" id="filter-end-date" class="filter-input" value="2025-12-31" />
+          <input type="date" id="filter-end-date" class="filter-input" value="${defaultEnd}" />
         </div>
         <div class="filter-group">
           <label class="filter-label" for="filter-account">Compte</label>
           <select id="filter-account" class="filter-select">
             <option value="">Tous les comptes</option>
-            ${accounts.map(a => `<option value="${a.guid}" ${a.guid === navParams.accountGuid ? 'selected' : ''}>${a.name} (${a.account_type})</option>`).join('')}
+            ${accounts.map(a => `<option value="${escapeHtml(a.guid)}" ${a.guid === navParams.accountGuid ? 'selected' : ''}>${escapeHtml(a.name)} (${escapeHtml(a.account_type)})</option>`).join('')}
           </select>
         </div>
         <div class="filter-group">
@@ -85,8 +91,8 @@ export async function renderLedger(container) {
 
   // Load data
   const filters = {
-    startDate: '2025-01-01',
-    endDate: '2025-12-31',
+    startDate: defaultStart,
+    endDate: defaultEnd,
     accountGuid: navParams.accountGuid || '',
     search: '',
   };

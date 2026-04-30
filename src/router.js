@@ -5,6 +5,16 @@
 const routes = {};
 let currentView = null;
 
+const viewTitles = {
+  'dashboard': 'Tableau de bord',
+  'accounts': 'Plan comptable',
+  'ledger': 'Grand livre',
+  'financial-reports': 'États Financiers',
+  'tax-report': 'Rapport fiscal',
+  'report-2025': 'Rapport 2025',
+  'sbqc-valuation': 'Valorisation SBQC',
+};
+
 /**
  * Register a view with a route name.
  */
@@ -37,6 +47,9 @@ async function handleRoute() {
     currentView = hash;
     container.innerHTML = '';
     container.style.display = 'block';
+
+    // P2: Dynamic page title
+    document.title = `${viewTitles[hash] || hash} — GnuCash Web`;
 
     // Reset animation
     container.style.animation = 'none';

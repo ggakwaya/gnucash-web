@@ -1,5 +1,5 @@
 import { getAccountBalancesAsOf, getAccountBalancesDelta } from '../db.js';
-import { formatCAD } from '../utils.js';
+import { formatCAD, escapeHtml } from '../utils.js';
 
 let currentDateStart = '2025-01-01';
 let currentDateEnd = '2025-12-31';
@@ -176,7 +176,7 @@ function renderPL(container) {
 
     if (Math.abs(val) > 0.01 || a.children.length > 0) {
       totalIncome += val;
-      incomeHTML += `<tr><td style="${paddingStyle}">${a.name} ${a.code ? '('+a.code+')' : ''}</td><td style="text-align: right;">${formatCAD(val)}</td></tr>`;
+      incomeHTML += `<tr><td style="${paddingStyle}">${escapeHtml(a.name)} ${a.code ? '('+escapeHtml(a.code)+')' : ''}</td><td style="text-align: right;">${formatCAD(val)}</td></tr>`;
     }
   });
 
@@ -195,7 +195,7 @@ function renderPL(container) {
 
     if (Math.abs(val) > 0.01 || a.children.length > 0) {
       totalExpense += val;
-      expenseHTML += `<tr><td style="${paddingStyle}">${a.name} ${a.code ? '('+a.code+')' : ''}</td><td style="text-align: right;">${formatCAD(val)}</td></tr>`;
+      expenseHTML += `<tr><td style="${paddingStyle}">${escapeHtml(a.name)} ${a.code ? '('+escapeHtml(a.code)+')' : ''}</td><td style="text-align: right;">${formatCAD(val)}</td></tr>`;
     }
   });
 
@@ -279,14 +279,14 @@ function renderBalanceSheet(container) {
     if (['ASSET', 'BANK', 'CASH', 'RECEIVABLE', 'MUTUAL'].includes(type)) {
       totalAssets += bal;
       if (Math.abs(bal) > 0.01 || a.children.length > 0) {
-        assetsHtml += `<tr><td style="${paddingStyle}">${a.name}</td><td style="text-align: right;">${formatCAD(bal)}</td></tr>`;
+        assetsHtml += `<tr><td style="${paddingStyle}">${escapeHtml(a.name)}</td><td style="text-align: right;">${formatCAD(bal)}</td></tr>`;
       }
     } 
     else if (['LIABILITY', 'CREDIT', 'PAYABLE'].includes(type)) {
       let dispBal = -bal; // Credit is negative in DB, display positive for Liab
       totalLiab += dispBal;
       if (Math.abs(bal) > 0.01 || a.children.length > 0) {
-        liabHtml += `<tr><td style="${paddingStyle}">${a.name}</td><td style="text-align: right;">${formatCAD(dispBal)}</td></tr>`;
+        liabHtml += `<tr><td style="${paddingStyle}">${escapeHtml(a.name)}</td><td style="text-align: right;">${formatCAD(dispBal)}</td></tr>`;
       }
     }
     else if (['EQUITY'].includes(type)) {
@@ -295,7 +295,7 @@ function renderBalanceSheet(container) {
       if (Math.abs(bal) > 0.01 || a.children.length > 0) {
         let isNegative = dispBal < 0;
         let valFmt = isNegative ? `<span style="color: var(--color-negative)">${formatCAD(dispBal)}</span>` : formatCAD(dispBal);
-        equityHtml += `<tr><td style="${paddingStyle}">${a.name}</td><td style="text-align: right;">${valFmt}</td></tr>`;
+        equityHtml += `<tr><td style="${paddingStyle}">${escapeHtml(a.name)}</td><td style="text-align: right;">${valFmt}</td></tr>`;
       }
     }
   });
@@ -364,7 +364,7 @@ function renderEquity(container) {
       periodEquityDeltas += dispBal;
       let isNegative = dispBal < 0;
       let valFmt = isNegative ? `<span style="color: var(--color-negative)">${formatCAD(dispBal)}</span>` : formatCAD(dispBal);
-      equityHTML += `<tr><td style="${paddingStyle}">${a.name}</td><td style="text-align: right;">${valFmt}</td></tr>`;
+      equityHTML += `<tr><td style="${paddingStyle}">${escapeHtml(a.name)}</td><td style="text-align: right;">${valFmt}</td></tr>`;
     }
   });
 
@@ -406,7 +406,7 @@ function renderCashFlow(container) {
   let cashAccountsHTML = '';
   
   deltas.filter(a => ['BANK', 'CASH'].includes(a.account_type) && Math.abs(a.balance) > 0).forEach(a => {
-    cashAccountsHTML += `<tr><td class="fr-indent">${a.name}</td><td style="text-align: right;">${formatCAD(a.balance)}</td></tr>`;
+    cashAccountsHTML += `<tr><td class="fr-indent">${escapeHtml(a.name)}</td><td style="text-align: right;">${formatCAD(a.balance)}</td></tr>`;
   });
 
   container.innerHTML = `

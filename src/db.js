@@ -83,6 +83,26 @@ export function isDatabaseLoaded() {
 }
 
 /**
+ * Validate that the loaded database has the expected GnuCash schema.
+ * Throws if required tables are missing.
+ */
+export function validateSchema() {
+  if (!db) throw new Error('Aucune base de données chargée.');
+  const required = ['accounts', 'transactions', 'splits', 'commodities'];
+  const missing = required.filter(table => {
+    try {
+      const result = db.exec(`SELECT 1 FROM ${table} LIMIT 1`);
+      return false;
+    } catch {
+      return true;
+    }
+  });
+  if (missing.length > 0) {
+    throw new Error(`Schéma invalide — tables manquantes : ${missing.join(', ')}. Ce fichier n'est pas une base GnuCash valide.`);
+  }
+}
+
+/**
  * Run a SQL query and return rows as an array of objects.
  */
 function query(sql, params = []) {

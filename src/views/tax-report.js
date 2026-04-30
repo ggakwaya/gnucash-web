@@ -5,7 +5,7 @@
  */
 
 import { getAccountBalancesDelta, getDatabaseInfo } from '../db.js';
-import { formatCAD } from '../utils.js';
+import { formatCAD, escapeHtml } from '../utils.js';
 import {
   t2125Lines,
   specialRules,
@@ -470,9 +470,4 @@ function computeSectionTotal(sectionKey, lineData) {
     const rate = getEffectiveRate(lineDef.line);
     return sum + (data.grossTotal * rate);
   }, 0);
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

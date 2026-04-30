@@ -5,8 +5,9 @@
  */
 
 import './styles/index.css';
-import { initDatabase, loadDatabaseFromBuffer, getDatabaseInfo, getCurrentDbName } from './db.js';
+import { initDatabase, loadDatabaseFromBuffer, getDatabaseInfo, getCurrentDbName, isDatabaseLoaded, validateSchema } from './db.js';
 import { registerRoute, initRouter } from './router.js';
+import { escapeHtml } from './utils.js';
 import { renderDashboard } from './views/dashboard.js';
 import { renderAccounts } from './views/accounts.js';
 import { renderLedger } from './views/ledger.js';
@@ -43,7 +44,7 @@ function onDatabaseReady(fileName) {
   dbInfoEl.innerHTML = `
     <span class="db-icon">💾</span>
     <span class="db-details">
-      <span class="db-name" title="${dbName}">${displayName}</span>
+      <span class="db-name" title="${escapeHtml(dbName)}">${escapeHtml(displayName)}</span>
       <span class="db-stats">${dbInfo.transactionCount} tx · ${dbInfo.accountCount} comptes · ${dbInfo.minDate.substring(0, 4) || '?'}</span>
     </span>
   `;
@@ -78,7 +79,7 @@ function showDropZone(message) {
   document.getElementById('loading-screen').innerHTML = `
     <div class="loader-container">
       <div class="drop-zone-icon">📂</div>
-      <p class="loader-text">${message || 'Glissez-déposez un fichier .gnucash'}</p>
+      <p class="loader-text">${escapeHtml(message || 'Glissez-déposez un fichier .gnucash')}</p>
       <button id="drop-zone-upload" class="sidebar-btn" style="width: auto; margin-top: 1rem;">
         Choisir un fichier…
       </button>
@@ -167,6 +168,14 @@ function setupDragAndDrop() {
       return;
     }
 
+    // P1: Confirm before replacing an already-loaded database
+    if (isDatabaseLoaded()) {
+      const currentName = getCurrentDbName() || 'la base actuelle';
+      if (!confirm(`Remplacer « ${currentName} » par « ${file.name} » ?`)) {
+        return;
+      }
+    }
+
     await loadFile(file);
   });
 }
@@ -180,7 +189,7 @@ async function loadFile(file) {
   document.getElementById('loading-screen').innerHTML = `
     <div class="loader-container">
       <div class="loader-spinner"></div>
-      <p class="loader-text">Chargement de ${file.name}…</p>
+      <p class="loader-text">Chargement de ${escapeHtml(file.name)}…</p>
     </div>
   `;
   document.getElementById('view-container').style.display = 'none';
@@ -188,20 +197,52 @@ async function loadFile(file) {
   try {
     const arrayBuffer = await file.arrayBuffer();
     await loadDatabaseFromBuffer(arrayBuffer, file.name);
+
+    // P1: Validate schema before proceeding
+    validateSchema();
+
     onDatabaseReady(file.name);
   } catch (error) {
     console.error('Erreur de chargement :', error);
     document.getElementById('loading-screen').innerHTML = `
       <div class="loader-container">
         <p class="loader-text" style="color: var(--color-negative);">
-          ❌ Erreur : ${error.message}
+          ❌ Erreur : ${escapeHtml(error.message)}
         </p>
       </div>
     `;
   }
 }
 
+/* ============================================================
+   Dark Mode Toggle
+   ============================================================ */
+
+function setupThemeToggle() {
+  const toggle = document.getElementById('theme-toggle');
+  const icon = toggle.querySelector('.btn-icon');
+
+  // Determine initial theme: localStorage > prefers-color-scheme > light
+  const stored = localStorage.getItem('gnucash-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const initialTheme = stored || (prefersDark ? 'dark' : 'light');
+  applyTheme(initialTheme);
+
+  toggle.addEventListener('click', () => {
+    const current = document.documentElement.getAttribute('data-theme') || 'light';
+    const next = current === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    localStorage.setItem('gnucash-theme', next);
+  });
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+}
+
 // Boot
 setupDragAndDrop();
 setupFilePicker();
+setupThemeToggle();
 bootstrap();

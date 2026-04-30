@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>GnuCash Web — Tableau de bord comptable</title>
     <meta name="description" content="Visualisation Web interactive des données comptables GnuCash — Dashboard, Plan comptable et Grand livre." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -10,58 +11,65 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   </head>
   <body>
+    <a href="#main-content" class="skip-nav">Aller au contenu principal</a>
     <div id="app">
-      <aside id="sidebar" class="sidebar">
+      <aside id="sidebar" class="sidebar" role="navigation" aria-label="Navigation principale">
         <div class="sidebar-brand">
-          <span class="brand-icon">📊</span>
+          <span class="brand-icon" aria-hidden="true">📊</span>
           <h1 class="brand-title">GnuCash<span class="brand-accent">Web</span></h1>
         </div>
-        <nav class="sidebar-nav">
+        <nav class="sidebar-nav" aria-label="Vues">
           <a href="#dashboard" class="nav-link active" data-view="dashboard" id="nav-dashboard">
-            <span class="nav-icon">🏠</span>
+            <span class="nav-icon" aria-hidden="true">🏠</span>
             <span class="nav-label">Dashboard</span>
           </a>
           <a href="#accounts" class="nav-link" data-view="accounts" id="nav-accounts">
-            <span class="nav-icon">🏛️</span>
+            <span class="nav-icon" aria-hidden="true">🏛️</span>
             <span class="nav-label">Plan comptable</span>
           </a>
           <a href="#financial-reports" class="nav-link" data-view="financial-reports" id="nav-financial-reports">
-            <span class="nav-icon">📑</span>
+            <span class="nav-icon" aria-hidden="true">📑</span>
             <span class="nav-label">États Financiers</span>
           </a>
           <a href="#tax-report" class="nav-link" data-view="tax-report" id="nav-tax-report">
-            <span class="nav-icon">🧾</span>
+            <span class="nav-icon" aria-hidden="true">🧾</span>
             <span class="nav-label">Rapport fiscal</span>
           </a>
           <a href="#report-2025" class="nav-link" data-view="report-2025" id="nav-report-2025">
-            <span class="nav-icon">📈</span>
+            <span class="nav-icon" aria-hidden="true">📈</span>
             <span class="nav-label">Rapport 2025</span>
           </a>
           <a href="#sbqc-valuation" class="nav-link" data-view="sbqc-valuation" id="nav-sbqc-valuation">
-            <span class="nav-icon">🏂</span>
+            <span class="nav-icon" aria-hidden="true">🏂</span>
             <span class="nav-label">Valorisation SBQC</span>
           </a>
           <a href="#ledger" class="nav-link" data-view="ledger" id="nav-ledger">
-            <span class="nav-icon">📒</span>
+            <span class="nav-icon" aria-hidden="true">📒</span>
             <span class="nav-label">Grand livre</span>
           </a>
         </nav>
         <div class="sidebar-footer">
-          <div class="db-info" id="db-info">
-            <span class="db-icon">💾</span>
+          <div class="db-info" id="db-info" role="status" aria-live="polite">
+            <span class="db-icon" aria-hidden="true">💾</span>
             <span class="db-label">Chargement…</span>
           </div>
-          <button id="import-btn" class="sidebar-btn btn-import" title="Charger un fichier .gnucash">
-            <span class="btn-icon">📂</span>
-            <span class="btn-label">Importer</span>
-          </button>
-          <input type="file" id="file-picker" accept=".gnucash" style="display: none;" />
+          <div class="sidebar-footer-actions">
+            <button id="import-btn" class="sidebar-btn btn-import" title="Charger un fichier .gnucash" aria-label="Importer un fichier GnuCash">
+              <span class="btn-icon" aria-hidden="true">📂</span>
+              <span class="btn-label">Importer</span>
+            </button>
+            <button id="theme-toggle" class="sidebar-btn btn-theme" title="Basculer le thème sombre/clair" aria-label="Basculer le mode sombre">
+              <span class="btn-icon" aria-hidden="true">🌙</span>
+              <span class="btn-label">Thème</span>
+            </button>
+          </div>
+          <input type="file" id="file-picker" accept=".gnucash" style="display: none;" aria-hidden="true" />
         </div>
       </aside>
-      <main id="main-content" class="main-content">
-        <div id="loading-screen" class="loading-screen">
+      <main id="main-content" class="main-content" role="main" aria-label="Contenu principal">
+        <div id="loading-screen" class="loading-screen" role="alert" aria-busy="true">
           <div class="loader-container">
-            <div class="loader-spinner"></div>
+            <div class="loader-spinner" aria-hidden="true"></div>
             <p class="loader-text">Chargement de la base de données…</p>
           </div>
         </div>
@@ -69,9 +77,9 @@
       </main>
     </div>
     <!-- Drop overlay for drag-and-drop -->
-    <div id="drop-overlay" class="drop-overlay">
+    <div id="drop-overlay" class="drop-overlay" role="dialog" aria-label="Zone de dépôt de fichier">
       <div class="drop-overlay-content">
-        <div class="drop-overlay-icon">📂</div>
+        <div class="drop-overlay-icon" aria-hidden="true">📂</div>
         <p class="drop-overlay-text">Déposez votre fichier <strong>.gnucash</strong> ici</p>
       </div>
     </div>

@@ -112,3 +112,25 @@ export function displayBalance(amount, accountType) {
   }
   return amount;
 }
+
+/**
+ * Escape HTML special characters to prevent XSS.
+ * Use whenever injecting user/DB-sourced text into innerHTML.
+ */
+export function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Safely compute a percentage, returning a fallback if the denominator is zero.
+ */
+export function safePercent(numerator, denominator, decimals = 1, fallback = '—') {
+  if (!denominator || !isFinite(numerator / denominator)) return fallback;
+  return ((numerator / denominator) * 100).toFixed(decimals) + '%';
+}
