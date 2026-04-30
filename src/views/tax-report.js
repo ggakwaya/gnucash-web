@@ -87,16 +87,22 @@ function buildLayout(minYear, maxYear) {
       .tax-detail-row td { padding-left: 2.5rem; color: var(--text-secondary); font-size: 0.85rem; font-weight: 400; }
 
       /* Adjustable rate input */
+      .tax-rate-wrap {
+        display: inline-flex; align-items: center; justify-content: center; gap: 2px;
+      }
       .tax-rate-input {
-        width: 56px; padding: 3px 4px; text-align: center;
+        width: 50px; padding: 3px 4px; text-align: center;
         border: 1px solid var(--border-card); border-radius: 4px;
         font-size: 0.82rem; font-family: var(--font-mono);
         background: var(--bg-body); color: var(--text-primary);
         transition: border-color 0.2s;
+        -moz-appearance: textfield;
       }
+      .tax-rate-input::-webkit-inner-spin-button,
+      .tax-rate-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
       .tax-rate-input:focus { outline: none; border-color: var(--accent-primary); box-shadow: 0 0 0 2px rgba(44, 160, 28, 0.15); }
       .tax-rate-input:hover { border-color: var(--text-muted); }
-      .tax-rate-suffix { font-size: 0.75rem; color: var(--text-muted); margin-left: 2px; }
+      .tax-rate-suffix { font-size: 0.8rem; color: var(--text-muted); }
 
       /* Gross amount (dimmed when rate < 100%) */
       .tax-gross-dimmed { color: var(--text-muted); }
@@ -381,9 +387,11 @@ function renderSection(title, partNum, sectionKey, lineData, totalLabel, totalLi
           <td class="col-amount ${isAdjusted ? 'tax-gross-dimmed' : ''}">${isAdjustable ? formatCAD(grossAmount) : ''}</td>
           <td class="col-rate">
             ${isAdjustable ? `
-              <input type="number" class="tax-rate-input" data-line="${lineDef.line}"
-                     value="${Math.round(rate * 100)}" min="0" max="100" step="1">
-              <span class="tax-rate-suffix">%</span>
+              <span class="tax-rate-wrap">
+                <input type="number" class="tax-rate-input" data-line="${lineDef.line}"
+                       value="${Math.round(rate * 100)}" min="0" max="100" step="1">
+                <span class="tax-rate-suffix">%</span>
+              </span>
             ` : ''}
           </td>
         ` : ''}
