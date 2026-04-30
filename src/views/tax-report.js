@@ -1,16 +1,18 @@
 /**
  * GnuCash Web — Tax Report View (T2125 / TP-80)
  * Generates a structured fiscal report mapped to CRA T2125 lines.
+ * Supports adjustable deduction rates with localStorage persistence.
  */
 
 import { getAccountBalancesDelta, getDatabaseInfo } from '../db.js';
 import { formatCAD } from '../utils.js';
 import {
   t2125Lines,
-  accountMap,
   specialRules,
   resolveT2125Line,
   getLinesBySection,
+  getEffectiveRate,
+  saveRateOverride,
 } from '../tax-mapping.js';
 
 let selectedYear = new Date().getFullYear();
@@ -68,9 +70,10 @@ function buildLayout(minYear, maxYear) {
         text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary);
         border-bottom: 2px solid var(--border-card);
       }
-      .tax-table th:last-child { text-align: right; }
+      .tax-table th.col-amount { text-align: right; }
       .tax-table td { padding: 7px 12px; border-bottom: 1px solid var(--border-subtle); color: var(--text-primary); font-size: 0.9rem; }
-      .tax-table td:last-child { text-align: right; font-family: var(--font-mono); font-size: 0.85rem; min-width: 120px; }
+      .tax-table .col-amount { text-align: right; font-family: var(--font-mono); font-size: 0.85rem; min-width: 110px; }
+      .tax-table .col-rate { text-align: center; width: 90px; }
       .tax-table tr:hover { background: rgba(44, 160, 28, 0.03); }
 
       /* Line row (T2125 line) */
@@ -82,12 +85,25 @@ function buildLayout(minYear, maxYear) {
       }
       /* Detail row (GnuCash account under a line) */
       .tax-detail-row td { padding-left: 2.5rem; color: var(--text-secondary); font-size: 0.85rem; font-weight: 400; }
-      .tax-detail-row td:last-child { color: var(--text-secondary); }
+
+      /* Adjustable rate input */
+      .tax-rate-input {
+        width: 56px; padding: 3px 4px; text-align: center;
+        border: 1px solid var(--border-card); border-radius: 4px;
+        font-size: 0.82rem; font-family: var(--font-mono);
+        background: var(--bg-body); color: var(--text-primary);
+        transition: border-color 0.2s;
+      }
+      .tax-rate-input:focus { outline: none; border-color: var(--accent-primary); box-shadow: 0 0 0 2px rgba(44, 160, 28, 0.15); }
+      .tax-rate-input:hover { border-color: var(--text-muted); }
+      .tax-rate-suffix { font-size: 0.75rem; color: var(--text-muted); margin-left: 2px; }
+
+      /* Gross amount (dimmed when rate < 100%) */
+      .tax-gross-dimmed { color: var(--text-muted); }
 
       /* Subtotal / Total */
       .tax-subtotal td { font-weight: 600; border-top: 1px dashed var(--border-card); background: #f9fafb; }
       .tax-total td { font-weight: 700; border-top: 2px solid var(--border-card); background: #f4f5f8; font-size: 1rem; }
-      .tax-total td:last-child { font-size: 1rem; }
 
       /* Section headers */
       .tax-section-header {
@@ -116,7 +132,7 @@ function buildLayout(minYear, maxYear) {
         #app { display: block; overflow: visible; height: auto; }
         .main-content { overflow: visible; height: auto; }
         .tax-section-header { break-before: auto; }
-        .view-title::after { content: " — ${selectedYear}"; }
+        .tax-rate-input { border: none; background: transparent; width: auto; }
       }
     </style>
   `;
@@ -151,21 +167,21 @@ function renderReport() {
   // Get all account balances for the period
   const deltas = getAccountBalancesDelta(startDate, endDate);
 
-  // Build aggregated data: T2125 line → { total, accounts[] }
-  const lineData = {};   // lineNumber → { total, accounts: [{ name, code, amount }] }
+  // Build aggregated data: T2125 line → { grossTotal, accounts[] }
+  // grossTotal = raw amounts BEFORE any deduction rate
+  const lineData = {};   // lineNumber → { grossTotal, accounts: [{ name, code, amount }] }
   const unmapped = [];   // accounts without a mapping
 
   deltas.forEach(acct => {
     const code = acct.code || '';
     const type = acct.account_type;
 
-    // Skip non income/expense, skip parent accounts with code ending in 00 that are just grouping
+    // Skip non income/expense
     if (!['INCOME', 'EXPENSE'].includes(type)) return;
 
     // Determine raw amount
     let amount = acct.balance;
     if (type === 'INCOME') amount = -amount; // Income is credit (negative) → show positive
-    // Expense is already positive (debit)
 
     if (Math.abs(amount) < 0.01) return; // Skip zero balances
 
@@ -174,24 +190,24 @@ function renderReport() {
 
     if (t2125Line !== null) {
       if (!lineData[t2125Line]) {
-        lineData[t2125Line] = { total: 0, accounts: [] };
+        lineData[t2125Line] = { grossTotal: 0, accounts: [] };
       }
-      lineData[t2125Line].total += amount;
+      lineData[t2125Line].grossTotal += amount;
       lineData[t2125Line].accounts.push({
         name: acct.name,
         code: code,
-        amount: amount,
+        amount: amount, // Always the raw/gross amount
       });
     } else {
-      // Only flag as unmapped if it's a leaf account (has a code and it's not a parent grouping)
+      // Only flag as unmapped if it's a leaf account
       if (code && !code.endsWith('000') && !code.endsWith('00')) {
         unmapped.push({ name: acct.name, code: code, type: type, amount: amount });
       }
     }
   });
 
-  // Apply special rules
-  applySpecialRules(lineData);
+  // Determine which sections have adjustable lines
+  const hasAdjustable = Object.keys(lineData).some(line => t2125Lines[line]?.adjustable);
 
   // Render HTML
   let html = '';
@@ -256,21 +272,25 @@ function renderReport() {
       <tbody>
         <tr>
           <td>Revenu brut total (ligne 8299)</td>
-          <td>${formatCAD(totalRevenue)}</td>
+          <td colspan="2"></td>
+          <td class="col-amount">${formatCAD(totalRevenue)}</td>
         </tr>
         <tr>
           <td>Moins : Dépenses d'exploitation</td>
-          <td style="color: var(--color-negative);">(${formatCAD(totalExpenses)})</td>
+          <td colspan="2"></td>
+          <td class="col-amount" style="color: var(--color-negative);">(${formatCAD(totalExpenses)})</td>
         </tr>
         ${totalCCA > 0 ? `
         <tr>
           <td>Moins : Déduction pour amortissement (DPA)</td>
-          <td style="color: var(--color-negative);">(${formatCAD(totalCCA)})</td>
+          <td colspan="2"></td>
+          <td class="col-amount" style="color: var(--color-negative);">(${formatCAD(totalCCA)})</td>
         </tr>
         ` : ''}
         <tr class="tax-total">
           <td>REVENU NET D'ENTREPRISE (PERTE)</td>
-          <td style="color: ${netIncome >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'};">
+          <td colspan="2"></td>
+          <td class="col-amount" style="color: ${netIncome >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'};">
             ${formatCAD(netIncome)}
           </td>
         </tr>
@@ -292,7 +312,7 @@ function renderReport() {
       </p>
       <table class="tax-table">
         <thead>
-          <tr><th>Compte</th><th>Code</th><th>Type</th><th>Montant</th></tr>
+          <tr><th>Compte</th><th>Code</th><th>Type</th><th class="col-amount">Montant</th></tr>
         </thead>
         <tbody>
           ${unmapped.map(u => `
@@ -300,7 +320,7 @@ function renderReport() {
               <td>${escapeHtml(u.name)}</td>
               <td><code>${u.code}</code></td>
               <td>${u.type}</td>
-              <td>${formatCAD(u.amount)}</td>
+              <td class="col-amount">${formatCAD(u.amount)}</td>
             </tr>
           `).join('')}
         </tbody>
@@ -309,6 +329,17 @@ function renderReport() {
   }
 
   container.innerHTML = html;
+
+  // ── Attach rate input events (after DOM injection) ──
+  container.querySelectorAll('.tax-rate-input').forEach(input => {
+    input.addEventListener('change', (e) => {
+      const lineNum = parseInt(e.target.dataset.line);
+      const pct = Math.max(0, Math.min(100, parseFloat(e.target.value) || 0));
+      e.target.value = pct; // Clamp displayed value
+      saveRateOverride(lineNum, pct / 100);
+      renderReport(); // Re-render with new rate
+    });
+  });
 }
 
 
@@ -318,15 +349,26 @@ function renderReport() {
 
 function renderSection(title, partNum, sectionKey, lineData, totalLabel, totalLineNum) {
   const lines = getLinesBySection(sectionKey);
+
+  // Check if this section has any adjustable lines with data
+  const sectionHasAdjustable = lines.some(l => l.adjustable && lineData[l.line]);
+
   let sectionTotal = 0;
+  let sectionGrossTotal = 0;
   let rowsHtml = '';
 
   lines.forEach(lineDef => {
     const data = lineData[lineDef.line];
-    if (!data || Math.abs(data.total) < 0.01) return; // Skip empty lines
+    if (!data || Math.abs(data.grossTotal) < 0.01) return;
 
-    const effectiveTotal = data.total;
-    sectionTotal += effectiveTotal;
+    const rate = getEffectiveRate(lineDef.line);
+    const grossAmount = data.grossTotal;
+    const deductibleAmount = grossAmount * rate;
+    sectionGrossTotal += grossAmount;
+    sectionTotal += deductibleAmount;
+
+    const isAdjusted = lineDef.adjustable && rate < 1.0;
+    const isAdjustable = lineDef.adjustable;
 
     // Line row
     rowsHtml += `
@@ -334,9 +376,18 @@ function renderSection(title, partNum, sectionKey, lineData, totalLabel, totalLi
         <td>
           <span class="tax-line-num">${lineDef.line}</span>
           ${escapeHtml(lineDef.label)}
-          ${lineDef.deductionRate ? `<span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 400;"> (${lineDef.deductionRate * 100}% déductible)</span>` : ''}
         </td>
-        <td>${formatCAD(effectiveTotal)}</td>
+        ${sectionHasAdjustable ? `
+          <td class="col-amount ${isAdjusted ? 'tax-gross-dimmed' : ''}">${isAdjustable ? formatCAD(grossAmount) : ''}</td>
+          <td class="col-rate">
+            ${isAdjustable ? `
+              <input type="number" class="tax-rate-input" data-line="${lineDef.line}"
+                     value="${Math.round(rate * 100)}" min="0" max="100" step="1">
+              <span class="tax-rate-suffix">%</span>
+            ` : ''}
+          </td>
+        ` : ''}
+        <td class="col-amount">${formatCAD(deductibleAmount)}</td>
       </tr>
     `;
 
@@ -345,10 +396,15 @@ function renderSection(title, partNum, sectionKey, lineData, totalLabel, totalLi
       data.accounts
         .sort((a, b) => b.amount - a.amount)
         .forEach(acct => {
+          const acctDeductible = acct.amount * rate;
           rowsHtml += `
             <tr class="tax-detail-row">
               <td>${escapeHtml(acct.name)} <span style="color: var(--text-muted); font-size: 0.75rem;">(${acct.code})</span></td>
-              <td>${formatCAD(acct.amount)}</td>
+              ${sectionHasAdjustable ? `
+                <td class="col-amount ${isAdjusted ? 'tax-gross-dimmed' : ''}">${isAdjustable ? formatCAD(acct.amount) : ''}</td>
+                <td class="col-rate"></td>
+              ` : ''}
+              <td class="col-amount">${formatCAD(acctDeductible)}</td>
             </tr>
           `;
         });
@@ -356,8 +412,23 @@ function renderSection(title, partNum, sectionKey, lineData, totalLabel, totalLi
   });
 
   if (!rowsHtml) {
-    rowsHtml = `<tr><td colspan="2" style="color: var(--text-muted); padding: 1rem;">Aucune donnée pour cette section.</td></tr>`;
+    const colSpan = sectionHasAdjustable ? 4 : 2;
+    rowsHtml = `<tr><td colspan="${colSpan}" style="color: var(--text-muted); padding: 1rem;">Aucune donnée pour cette section.</td></tr>`;
   }
+
+  // Build header
+  const headerCols = sectionHasAdjustable
+    ? `<tr><th>Description</th><th class="col-amount">Brut</th><th class="col-rate">Taux</th><th class="col-amount">Déductible</th></tr>`
+    : `<tr><th>Description</th><th class="col-amount">Montant</th></tr>`;
+
+  // Build subtotal row
+  const subtotalCols = sectionHasAdjustable
+    ? `<td>${escapeHtml(totalLabel)}${totalLineNum ? ` <span class="tax-line-num">${totalLineNum}</span>` : ''}</td>
+       <td class="col-amount tax-gross-dimmed">${sectionGrossTotal !== sectionTotal ? formatCAD(sectionGrossTotal) : ''}</td>
+       <td class="col-rate"></td>
+       <td class="col-amount">${formatCAD(sectionTotal)}</td>`
+    : `<td>${escapeHtml(totalLabel)}${totalLineNum ? ` <span class="tax-line-num">${totalLineNum}</span>` : ''}</td>
+       <td class="col-amount">${formatCAD(sectionTotal)}</td>`;
 
   return `
     <div class="tax-section-header">
@@ -366,38 +437,16 @@ function renderSection(title, partNum, sectionKey, lineData, totalLabel, totalLi
     </div>
     <table class="tax-table">
       <thead>
-        <tr><th>Description</th><th>Montant</th></tr>
+        ${headerCols}
       </thead>
       <tbody>
         ${rowsHtml}
         <tr class="tax-subtotal">
-          <td>${escapeHtml(totalLabel)}${totalLineNum ? ` <span class="tax-line-num">${totalLineNum}</span>` : ''}</td>
-          <td>${formatCAD(sectionTotal)}</td>
+          ${subtotalCols}
         </tr>
       </tbody>
     </table>
   `;
-}
-
-
-/* ================================================================
-   SPECIAL RULES
-   ================================================================ */
-
-function applySpecialRules(lineData) {
-  // Apply 50% meal deduction (line 8523)
-  if (lineData[8523]) {
-    const rate = specialRules.mealDeductionRate;
-    lineData[8523].total *= rate;
-    lineData[8523].accounts.forEach(a => { a.amount *= rate; });
-  }
-
-  // Apply vehicle business use percentage (line 9281)
-  if (lineData[9281] && specialRules.vehicleBusinessPercent < 1.0) {
-    const pct = specialRules.vehicleBusinessPercent;
-    lineData[9281].total *= pct;
-    lineData[9281].accounts.forEach(a => { a.amount *= pct; });
-  }
 }
 
 
@@ -408,7 +457,10 @@ function applySpecialRules(lineData) {
 function computeSectionTotal(sectionKey, lineData) {
   const lines = getLinesBySection(sectionKey);
   return lines.reduce((sum, lineDef) => {
-    return sum + (lineData[lineDef.line]?.total || 0);
+    const data = lineData[lineDef.line];
+    if (!data) return sum;
+    const rate = getEffectiveRate(lineDef.line);
+    return sum + (data.grossTotal * rate);
   }, 0);
 }
 

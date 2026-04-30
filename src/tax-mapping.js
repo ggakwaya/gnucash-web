@@ -22,7 +22,8 @@ export const t2125Lines = {
 
   // ── Part 4: Expenses ──
   8521: { label: 'Publicité', labelEn: 'Advertising', section: 'expense', part: '4' },
-  8523: { label: 'Repas et représentation', labelEn: 'Meals and entertainment', section: 'expense', part: '4', deductionRate: 0.50 },
+  8523: { label: 'Repas et représentation', labelEn: 'Meals and entertainment', section: 'expense', part: '4', deductionRate: 0.50, adjustable: true },
+  // NOTE: Adjustable lines show gross + % + deductible columns in the tax report
   8590: { label: 'Créances irrécouvrables', labelEn: 'Bad debts', section: 'expense', part: '4' },
   8690: { label: 'Assurances', labelEn: 'Insurance', section: 'expense', part: '4' },
   8710: { label: 'Intérêts et frais bancaires', labelEn: 'Interest and bank charges', section: 'expense', part: '4' },
@@ -39,7 +40,7 @@ export const t2125Lines = {
   9220: { label: 'Services publics', labelEn: 'Utilities', section: 'expense', part: '4' },
   9224: { label: 'Carburant (équipement)', labelEn: 'Fuel costs (equipment)', section: 'expense', part: '4' },
   9275: { label: 'Livraison, messagerie', labelEn: 'Delivery, freight, and express', section: 'expense', part: '4' },
-  9281: { label: 'Frais de véhicule moteur', labelEn: 'Motor vehicle expenses', section: 'expense', part: '4' },
+  9281: { label: 'Frais de véhicule moteur', labelEn: 'Motor vehicle expenses', section: 'expense', part: '4', deductionRate: 1.0, adjustable: true },
   9270: { label: 'Autres dépenses', labelEn: 'Other expenses', section: 'expense', part: '4' },
   9369: { label: 'Revenu net avant ajustements', labelEn: 'Net income before adjustments', section: 'result', part: '5', computed: true },
 
@@ -139,6 +140,42 @@ export const specialRules = {
   /** Fiscal year */
   fiscalYearEnd: '12-31',
 };
+
+
+/** ──────────────────────────────────────────────────────────────
+ *  RATE OVERRIDES (localStorage persistence)
+ *  User-adjustable deduction percentages, persisted across sessions.
+ *  ────────────────────────────────────────────────────────────── */
+const STORAGE_KEY = 'gnucash-tax-rates';
+
+/** Load user rate overrides from localStorage. */
+export function loadRateOverrides() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** Save a single rate override. lineNumber is the T2125 line (int), rate is 0–1. */
+export function saveRateOverride(lineNumber, rate) {
+  const overrides = loadRateOverrides();
+  overrides[String(lineNumber)] = rate;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(overrides));
+}
+
+/**
+ * Get the effective deduction rate for a T2125 line.
+ * Priority: user override → line default → 1.0 (full deduction).
+ */
+export function getEffectiveRate(lineNumber) {
+  const overrides = loadRateOverrides();
+  const key = String(lineNumber);
+  if (overrides[key] !== undefined) return overrides[key];
+  const def = t2125Lines[lineNumber];
+  return def?.deductionRate ?? 1.0;
+}
 
 
 /** ──────────────────────────────────────────────────────────────
