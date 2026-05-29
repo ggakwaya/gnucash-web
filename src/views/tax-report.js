@@ -263,15 +263,15 @@ function renderReport() {
     );
   }
 
-  // ── Net Income ──
+  // ── Net Income (Part 5) ──
   const totalRevenue = computeSectionTotal('revenue', lineData);
   const totalExpenses = computeSectionTotal('expense', lineData);
   const totalCCA = computeSectionTotal('cca', lineData);
-  const netIncome = totalRevenue - totalExpenses - totalCCA;
+  const netIncome = totalRevenue - totalExpenses - totalCCA; // line 9369
 
   html += `
     <div class="tax-section-header" style="margin-top: 2.5rem;">
-      Partie 5 — Résultat net
+      Partie 5 — Revenu net (perte) avant rajustements
       <span class="tax-section-badge">Ligne 9369</span>
     </div>
     <table class="tax-table">
@@ -282,19 +282,19 @@ function renderReport() {
           <td class="col-amount">${formatCAD(totalRevenue)}</td>
         </tr>
         <tr>
-          <td>Moins : Dépenses d'exploitation</td>
+          <td>Moins : Dépenses d'exploitation (ligne 9368)</td>
           <td colspan="2"></td>
           <td class="col-amount" style="color: var(--color-negative);">(${formatCAD(totalExpenses)})</td>
         </tr>
         ${totalCCA > 0 ? `
         <tr>
-          <td>Moins : Déduction pour amortissement (DPA)</td>
+          <td>Moins : Déduction pour amortissement (DPA, ligne 9936)</td>
           <td colspan="2"></td>
           <td class="col-amount" style="color: var(--color-negative);">(${formatCAD(totalCCA)})</td>
         </tr>
         ` : ''}
-        <tr class="tax-total">
-          <td>REVENU NET D'ENTREPRISE (PERTE)</td>
+        <tr class="tax-subtotal">
+          <td><span class="tax-line-num">9369</span> Revenu net avant rajustements</td>
           <td colspan="2"></td>
           <td class="col-amount" style="color: ${netIncome >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'};">
             ${formatCAD(netIncome)}
@@ -302,6 +302,48 @@ function renderReport() {
         </tr>
       </tbody>
     </table>
+  `;
+
+  // ── Part 6: Your net income (after home-office adjustment) ──
+  const homeOfficePct = specialRules.homeOfficePercent || 0;
+  // Home-office (line 9945) = home expenses × business-use %, capped at net income.
+  // No household-expense accounts are tracked in the books, so this is 0 unless configured.
+  const homeOfficeExpense = 0;
+  const netIncomeFinal = Math.max(0, netIncome) - homeOfficeExpense; // line 9946
+
+  html += `
+    <div class="tax-section-header" style="margin-top: 2.5rem;">
+      Partie 6 — Votre revenu net (perte)
+      <span class="tax-section-badge">Ligne 9946</span>
+    </div>
+    <table class="tax-table">
+      <tbody>
+        <tr>
+          <td>Revenu net avant rajustements (ligne 9369)</td>
+          <td colspan="2"></td>
+          <td class="col-amount">${formatCAD(netIncome)}</td>
+        </tr>
+        <tr>
+          <td>
+            Moins : Dépenses pour bureau à domicile (ligne 9945)
+            <span style="color: var(--text-muted); font-size: 0.75rem;"> — ${homeOfficePct > 0 ? `${Math.round(homeOfficePct * 100)} % d'utilisation` : 'aucune dépense de domicile saisie'}</span>
+          </td>
+          <td colspan="2"></td>
+          <td class="col-amount" style="color: var(--color-negative);">(${formatCAD(homeOfficeExpense)})</td>
+        </tr>
+        <tr class="tax-total">
+          <td>VOTRE REVENU NET D'ENTREPRISE (LIGNE 9946)</td>
+          <td colspan="2"></td>
+          <td class="col-amount" style="color: ${netIncomeFinal >= 0 ? 'var(--color-positive)' : 'var(--color-negative)'};">
+            ${formatCAD(netIncomeFinal)}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 0.5rem;">
+      Reporter ce montant à la ligne 13500 de la déclaration fédérale (T1) et à la ligne 164 de la déclaration du Québec (TP-1).
+      Le bureau à domicile (9945) se configure via <code>specialRules.homeOfficePercent</code> dans <code>tax-mapping.js</code>.
+    </p>
   `;
 
   // ── Unmapped accounts ──
@@ -362,13 +404,22 @@ function renderSection(title, partNum, sectionKey, lineData, totalLabel, totalLi
   let sectionTotal = 0;
   let sectionGrossTotal = 0;
   let rowsHtml = '';
+  const adjustments = []; // credit-balance accounts (e.g. CTI/RTI tax isolation) shown as a separate "Moins" row
 
   lines.forEach(lineDef => {
     const data = lineData[lineDef.line];
-    if (!data || Math.abs(data.grossTotal) < 0.01) return;
+    if (!data) return;
+
+    // A T2125 line cannot be filed with a negative amount. Pull any credit-balance
+    // accounts (refunds, recoverable-tax isolation entries) out of the line and
+    // regroup them below as explicit adjustments so each filed line stays positive.
+    const positiveAccounts = data.accounts.filter(a => a.amount >= 0);
+    data.accounts.filter(a => a.amount < 0).forEach(a => adjustments.push(a));
+
+    const grossAmount = positiveAccounts.reduce((s, a) => s + a.amount, 0);
+    if (Math.abs(grossAmount) < 0.01) return;
 
     const rate = getEffectiveRate(lineDef.line);
-    const grossAmount = data.grossTotal;
     const deductibleAmount = grossAmount * rate;
     sectionGrossTotal += grossAmount;
     sectionTotal += deductibleAmount;
@@ -400,8 +451,8 @@ function renderSection(title, partNum, sectionKey, lineData, totalLabel, totalLi
     `;
 
     // Detail rows (individual accounts under this line)
-    if (data.accounts.length > 1) {
-      data.accounts
+    if (positiveAccounts.length > 1) {
+      positiveAccounts
         .sort((a, b) => b.amount - a.amount)
         .forEach(acct => {
           const acctDeductible = acct.amount * rate;
@@ -418,6 +469,36 @@ function renderSection(title, partNum, sectionKey, lineData, totalLabel, totalLi
         });
     }
   });
+
+  // Adjustments block: credit-balance accounts regrouped (e.g. CTI/RTI TTC→HT isolation).
+  const adjustmentTotal = adjustments.reduce((s, a) => s + a.amount, 0);
+  if (adjustments.length && Math.abs(adjustmentTotal) > 0.01) {
+    sectionGrossTotal += adjustmentTotal;
+    sectionTotal += adjustmentTotal;
+
+    const span = sectionHasAdjustable
+      ? `<td class="col-amount"></td><td class="col-rate"></td>`
+      : '';
+    rowsHtml += `
+      <tr class="tax-line-row">
+        <td>Moins : ajustements (taxes récupérables CTI/RTI, crédits)</td>
+        ${span}
+        <td class="col-amount" style="color: var(--color-negative);">${formatCAD(adjustmentTotal)}</td>
+      </tr>
+    `;
+    adjustments
+      .sort((a, b) => a.amount - b.amount)
+      .forEach(acct => {
+        const detailSpan = sectionHasAdjustable ? `<td class="col-amount"></td><td class="col-rate"></td>` : '';
+        rowsHtml += `
+          <tr class="tax-detail-row">
+            <td>${escapeHtml(acct.name)} <span style="color: var(--text-muted); font-size: 0.75rem;">(${acct.code})</span></td>
+            ${detailSpan}
+            <td class="col-amount" style="color: var(--color-negative);">${formatCAD(acct.amount)}</td>
+          </tr>
+        `;
+      });
+  }
 
   if (!rowsHtml) {
     const colSpan = sectionHasAdjustable ? 4 : 2;
